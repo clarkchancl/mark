@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0b6b4b">
+<meta name="description" content="輸入電路板元件編號，查看實際電路板照片與元件佈置圖上的位置。">
+<title>電路板元件位置偵測</title>
+<style>
+:root{color-scheme:light;--green:#0b6b4b;--green-dark:#07533a;--ink:#18352b;--muted:#60736b;--line:#dbe6df;--paper:#f4f7f3;--red:#c62828}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI","Noto Sans TC","Microsoft JhengHei",sans-serif;line-height:1.55}
+.page{width:min(1320px,100% - 32px);margin:auto;padding:28px 0 44px}header{display:flex;align-items:flex-start;gap:15px;margin:0 0 22px}
+.brand{width:48px;height:48px;flex:0 0 48px;border-radius:15px;background:var(--green);display:grid;place-items:center;color:#fff}
+.brand svg{width:27px;height:27px}h1{font-size:clamp(1.45rem,3vw,2rem);line-height:1.2;margin:1px 0 6px}.intro{margin:0;color:var(--muted)}
+.panel,.board-card{background:#fff;border:1px solid var(--line);border-radius:17px;box-shadow:0 8px 24px #203e2c0a}.panel{padding:clamp(17px,3vw,26px)}
+.form-grid{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:12px;align-items:end}.field{min-width:0}.field-label{display:block;font-weight:700;margin-bottom:7px}.hint{font-size:.88rem;color:var(--muted);margin:0 0 9px}
+input[type=text]{width:100%;min-height:48px;border:1px solid #b9cbc0;border-radius:11px;padding:10px 14px;font:inherit;color:var(--ink);background:#fff;outline:none}
+input[type=text]:focus{border-color:var(--green);box-shadow:0 0 0 3px #0b6b4b20}
+button{min-height:46px;border:0;border-radius:11px;padding:10px 18px;font:inherit;font-weight:700;cursor:pointer;transition:transform .12s,background .12s}
+button:focus-visible,input:focus-visible{outline:3px solid #54a786;outline-offset:2px}button:active{transform:translateY(1px)}
+.primary{background:var(--green);color:#fff}.primary:hover{background:var(--green-dark)}.secondary{background:#edf3ef;color:var(--ink)}.secondary:hover{background:#e1ebe4}
+.message{min-height:1.5em;margin:13px 0 0;font-size:.94rem;color:var(--muted)}.message.error{color:#a31919;font-weight:650}.message.success{color:var(--green-dark);font-weight:650}
+.examples{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px;align-items:center;color:var(--muted);font-size:.86rem}.examples code{font-family:ui-monospace,Consolas,monospace;background:#eef4ef;color:#285743;padding:3px 8px;border-radius:7px}
+#results{margin-top:24px}.results-head{margin-bottom:14px}h2{font-size:1.18rem;margin:0 0 4px}.summary{font-size:.91rem;color:var(--muted);margin:0}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin:14px 0 18px}.chip{border:1px solid #efb4b4;color:#9f1d1d;background:#fff7f7;border-radius:999px;padding:4px 10px;font:650 .88rem ui-monospace,Consolas,monospace}
+.board-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.board-card{padding:14px;min-width:0}.board-card h3{font-size:1rem;margin:0 0 3px}.board-card p{font-size:.83rem;color:var(--muted);margin:0 0 12px}.board-card p.coverage-note{margin-top:-8px;line-height:1.45}
+.calibration-tools{display:flex;flex-wrap:wrap;gap:7px;margin:8px 0}.calibration-tools button{min-height:38px;padding:7px 11px;font-size:.84rem}.calibrating #layoutImage,.calibrating #photoImage{cursor:crosshair}.photo-picker{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px 10px;align-items:center;margin:7px 0 9px}.photo-picker label{font-size:.88rem;font-weight:700}.photo-picker input{min-width:0;max-width:100%;font:inherit;font-size:.82rem}.photo-reset{grid-column:2;grid-row:1/3;min-height:38px;padding:7px 11px;font-size:.84rem}.photo-help{font-size:.8rem!important;line-height:1.45;margin:0 0 10px!important}.image-wrap{position:relative;width:100%;line-height:0;overflow:hidden;border-radius:9px;background:#f0f2ef;border:1px solid #e4e9e5}.image-wrap img{display:block;width:100%;height:auto}
+.markers{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}.marker-pin{fill:#e11d48;stroke:#fff;stroke-width:3}.marker-stem{stroke:#9f1239;stroke-width:2.4;stroke-linecap:round}.marker-tag{fill:#fff;fill-opacity:.97;stroke:#be123c;stroke-width:2}.marker-text{font:700 18px Arial,sans-serif;fill:#9f1239;text-anchor:middle;dominant-baseline:central;paint-order:stroke;stroke:#fff;stroke-width:1}
+.save-panel{margin-top:18px;padding:14px 16px;background:#f7faf8;border:1px solid var(--line);border-radius:13px}.save-check{display:flex;align-items:center;gap:10px;font-weight:700;cursor:pointer}.save-check input{width:19px;height:19px;accent-color:var(--green)}
+.save-note{font-size:.84rem;color:var(--muted);margin:5px 0 0 29px}.downloads{display:flex;flex-wrap:wrap;gap:10px;margin:13px 0 0 29px}.downloads button{min-height:40px;background:#e8f2ec;color:var(--green-dark);padding:8px 13px;font-size:.91rem}.downloads button:hover{background:#d8e9df}
+.privacy,footer{font-size:.82rem;color:var(--muted)}.privacy{margin:20px 2px 0}footer{margin-top:23px;padding-top:15px;border-top:1px solid var(--line)}.hidden{display:none!important}
+@media(max-width:850px){.form-grid{grid-template-columns:minmax(0,1fr) auto}.field{grid-column:1/-1}.form-grid .primary{grid-column:1}.form-grid .secondary{grid-column:2}.board-grid{grid-template-columns:1fr}}
+@media(max-width:520px){.photo-picker{grid-template-columns:1fr}.photo-reset{grid-column:1;grid-row:auto;justify-self:start}.page{width:calc(100% - 22px);padding-top:18px}.brand{width:42px;height:42px;flex-basis:42px;border-radius:13px}.form-grid{gap:9px}.form-grid button{padding:9px 13px}.board-card{padding:10px}.downloads,.save-note{margin-left:0}}
+</style>
+</head>
+<body>
+<main class="page">
+<header>
+<div class="brand" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 21s7-6.1 7-12a7 7 0 1 0-14 0c0 5.9 7 12 7 12Z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="9" r="2.4" stroke="currentColor" stroke-width="1.8"/><path d="M2.5 21.5h19" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+<div><h1>電路板元件位置偵測</h1><p class="intro">輸入元件編號，即可對照實際電路板與元件佈置圖的位置。</p></div>
+</header>
+<section class="panel" aria-labelledby="search-title">
+<div class="photo-picker"><label for="photoFile">實際電路板圖片</label><input id="photoFile" type="file" accept="image/*" aria-describedby="photoHelp"><button id="restorePhoto" class="secondary photo-reset" type="button">還原範例照片</button></div><p id="photoHelp" class="photo-help">選擇後，後續查詢標記與下載會使用這張照片；圖片只在本機使用。若取景範圍不同，完成查詢後可校正照片位置。</p>
+
+<form id="searchForm" novalidate>
+<div class="form-grid">
+<div class="field"><label class="field-label" id="search-title" for="partInput">元件編號</label><p class="hint" id="inputHint">可輸入元件代號、多筆代號或 R-all；英文大小寫皆可，多筆以空格分開。</p><input id="partInput" name="parts" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-describedby="inputHint message" placeholder="例如：U1  R23  C10  CON1"></div>
+<button class="primary" type="submit">確認</button><button class="secondary" type="reset">清除</button>
+</div><p id="message" class="message" role="status" aria-live="polite"></p>
+</form>
+<div class="examples" aria-label="可查詢範例"><span>可查詢範例：</span><code>U1</code><code>R23</code><code>C10</code><code>CON1</code><code>GND</code><code>R-all</code><code>D-all</code><code>r2 d3</code></div>
+</section>
+<section id="results" aria-live="polite">
+<div id="resultsHead" class="results-head hidden"><h2>元件位置</h2><p id="resultSummary" class="summary"></p></div>
+<div id="selectedParts" class="chips hidden" aria-label="已查詢元件"></div>
+<div class="board-grid">
+<article class="board-card"><h3>實際電路板</h3><div class="calibration-tools"><button id="calibratePhoto" class="secondary" type="button">校正照片位置</button><button id="resetPhotoCalibration" class="secondary" type="button">回復預設定位</button></div><p id="calibrationHelp" class="photo-help">校正時依序點選：佈置圖中的照片範圍左上角、右下角，再點實際照片中對應的兩個角。適用於未旋轉的完整或局部照片。</p><p>只標示照片範圍內可見的元件</p><p id="photoCoverageNote" class="coverage-note"></p><div class="image-wrap"><img id="photoImage" src="assets/BS01.jpg" alt="完整電路板照片" width="1477" height="1043"><svg id="photoMarkers" class="markers" role="img" aria-label="實際電路板上的元件標記"></svg></div></article>
+<article class="board-card"><h3>元件佈置圖</h3><p>依照元件佈置圖核對位置</p><div class="image-wrap"><img id="layoutImage" src="assets/layout.png" alt="測試電路板元件佈置圖" width="1193" height="800"><svg id="layoutMarkers" class="markers" role="img" aria-label="佈置圖上的元件標記"></svg></div></article>
+</div>
+<section class="save-panel" aria-label="儲存標示圖片"><label class="save-check" for="saveToggle"><input id="saveToggle" type="checkbox">要將標示結果儲存到裝置嗎？</label><p class="save-note">勾選後可下載兩張已標示圖片；圖片由瀏覽器產生；選擇的照片只在本機使用，不會上傳。</p><div id="downloadButtons" class="downloads hidden"><button id="downloadPhoto" type="button">下載實際電路板圖</button><button id="downloadLayout" type="button">下載元件佈置圖</button></div></section>
+</section>
+<p class="privacy">輸入的編號只在此頁面本機處理，不會傳送到伺服器。</p>
+<footer>位置依提供的電路板照片與佈置圖標示；請以實際元件絲印與電路板方向再次核對。</footer>
+</main>
+<script>
+'use strict';
+const LAYOUT_WIDTH=1193,LAYOUT_HEIGHT=800,PHOTO_WIDTH=1477,PHOTO_HEIGHT=1108,DEFAULT_PHOTO_SRC='assets/BS01.jpg';
+const layoutPoints=Object.freeze({
+GND:[676,108],CON1:[49,250],CON2:[596,250],J1:[1120,183],J5:[53,535],J8:[843,754],U1:[687,580],U2:[688,496],
+R27:[199,123],R28:[199,157],R29:[199,191],R30:[199,226],R31:[199,260],R32:[199,294],R33:[199,328],R34:[199,363],
+R1:[1014,566],R2:[1036,176],R3:[996,176],R4:[978,566],R5:[957,176],R6:[436,554],R7:[354,710],R8:[934,566],R9:[385,554],R10:[543,554],R13:[489,554],R14:[594,554],R15:[631,710],R16:[895,566],R17:[857,566],R18:[816,566],R19:[775,566],R20:[315,710],R21:[591,710],R22:[392,710],R23:[432,710],R24:[471,710],R25:[511,710],R26:[551,710],
+SVR1:[289,591],SVR2:[289,478],C1:[1105,481],C3:[77,454],C4:[674,286],C5:[204,450],C6:[1074,578],C7:[726,670],C8:[822,466],C9:[165,570],C10:[1105,383],C11:[1027,713],C12:[1095,663],C14:[693,752],
+D1:[866,178],D2:[904,178],D3:[787,178],D4:[828,178],D5:[1120,279],D6:[1036,286],D7:[995,286],D8:[710,185],D9:[748,185],
+Q1:[899,301],Q2:[821,301],Q3:[485,467],Q4:[745,301],Q5:[899,394],Q6:[817,394],Q7:[744,394],Q8:[397,467],Q9:[568,467],TP1:[913,688],TP2:[1108,719],TP3:[768,751]
+});
+const familyOrder=['SVR','CON','TP','GND','R','C','D','Q','U','J'];
+const familyColors={SVR:['#db2777','#9d174d'],CON:['#4f46e5','#3730a3'],TP:['#0891b2','#0e7490'],GND:['#64748b','#475569'],R:['#dc2626','#991b1b'],C:['#facc15','#854d0e'],D:['#2563eb','#1d4ed8'],Q:['#9333ea','#6b21a8'],U:['#d97706','#92400e'],J:['#65a30d','#3f6212']};
+function familyOf(id){if(id==='GND')return'GND';return familyOrder.find(function(prefix){return id.startsWith(prefix)&&/^\d+$/.test(id.slice(prefix.length));})||'OTHER';}
+function colorFor(id){return familyColors[familyOf(id)]||['#475569','#334155'];}
+function resolveIdentifiers(raw){const tokens=raw.split(/\s+/).map(function(value){return value.toUpperCase();}),expanded=[];for(const token of tokens){if(/^[A-Z]{1,4}-ALL$/.test(token)){const prefix=token.slice(0,-4),found=Object.keys(layoutPoints).filter(function(id){return id.startsWith(prefix)&&/^\d+$/.test(id.slice(prefix.length));});if(!found.length)return{error:'找不到「'+token+'」對應的元件群組，請確認類別代號。'};expanded.push.apply(expanded,found);}else if(/^(?:GND|[A-Z]{1,4}\d{1,2})$/.test(token)){expanded.push(token);}else{return{error:'「'+token+'」格式不正確。請使用元件編號（例如 R1、C10、CON1、SVR1、GND），或使用「R-all」查詢整個類別。'};}}const unique=Array.from(new Set(expanded)),unknown=unique.filter(function(value){return !Object.prototype.hasOwnProperty.call(layoutPoints,value);});if(unknown.length)return{error:'找不到元件編號：'+unknown.join('、')+'。請檢查編號，並只輸入佈置圖中存在的項目。'};return{items:unique,tokens:tokens};}
+const defaultPhotoCalibration={layout:{left:18,top:76,right:1180,bottom:791},photo:{left:2,top:2,right:1466,bottom:1035},photoWidth:1477,photoHeight:1043};function createDefaultPhotoCalibration(){return{layout:Object.assign({},defaultPhotoCalibration.layout),photo:Object.assign({},defaultPhotoCalibration.photo),photoWidth:defaultPhotoCalibration.photoWidth,photoHeight:defaultPhotoCalibration.photoHeight};}let photoCalibration=createDefaultPhotoCalibration();
+const form=document.getElementById('searchForm'),input=document.getElementById('partInput'),message=document.getElementById('message'),results=document.getElementById('results'),resultsHead=document.getElementById('resultsHead'),summary=document.getElementById('resultSummary'),selectedParts=document.getElementById('selectedParts'),saveToggle=document.getElementById('saveToggle'),downloadButtons=document.getElementById('downloadButtons'),photoCoverageNote=document.getElementById('photoCoverageNote'),photoImage=document.getElementById('photoImage'),photoFile=document.getElementById('photoFile'),restorePhoto=document.getElementById('restorePhoto'),calibratePhoto=document.getElementById('calibratePhoto'),resetPhotoCalibration=document.getElementById('resetPhotoCalibration'),calibrationHelp=document.getElementById('calibrationHelp'),layoutImage=document.getElementById('layoutImage');
+let currentMatches=[],selectedPhotoUrl="";
+function setMessage(text,kind){message.textContent=text;message.className='message'+(kind?' '+kind:'');message.setAttribute('role',kind==='error'?'alert':'status');}
+function clearResultDisplay(){currentMatches=[];resultsHead.classList.add('hidden');summary.textContent='';selectedParts.replaceChildren();selectedParts.classList.add('hidden');document.getElementById('photoMarkers').replaceChildren();document.getElementById('layoutMarkers').replaceChildren();photoCoverageNote.textContent='';downloadButtons.classList.add('hidden');}
+function photoPoint(id){const p=layoutPoints[id],c=photoCalibration.layout,b=photoCalibration.photo,x=(p[0]-c.left)/(c.right-c.left),y=(p[1]-c.top)/(c.bottom-c.top),scaleX=photoImage.naturalWidth?photoImage.naturalWidth/photoCalibration.photoWidth:1,scaleY=photoImage.naturalHeight?photoImage.naturalHeight/photoCalibration.photoHeight:1;return[(b.left+x*(b.right-b.left))*scaleX,(b.top+y*(b.bottom-b.top))*scaleY];}
+function photoIsVisible(id){const p=photoPoint(id),w=photoImage.naturalWidth||PHOTO_WIDTH,h=photoImage.naturalHeight||PHOTO_HEIGHT;return p[0]>=0&&p[0]<=w&&p[1]>=0&&p[1]<=h;}
+function markerPoint(id,kind){return kind==='photo'?photoPoint(id):layoutPoints[id];}
+function computeLabelPlaces(items,width,height,kind){
+const placed=[],choices=[[0,-27],[0,28],[-25,-45],[25,-45],[-25,45],[25,45],[0,-62],[0,62]];
+return items.map((id,index)=>{const p=markerPoint(id,kind),x=p[0],y=p[1],bw=Math.max(38,id.length*11+12),bh=25;let best=null;
+for(const o of choices){const cx=Math.max(bw/2+3,Math.min(width-bw/2-3,x+o[0])),cy=Math.max(bh/2+3,Math.min(height-bh/2-3,y+o[1])),r={x:cx-bw/2,y:cy-bh/2,w:bw,h:bh},overlap=placed.some(q=>r.x<q.x+q.w+3&&r.x+r.w+3>q.x&&r.y<q.y+q.h+3&&r.y+r.h+3>q.y);if(!overlap){best={id:id,x:x,y:y,cx:cx,cy:cy,bw:bw,bh:bh,rect:r};break;}}
+if(!best){const o=choices[index%choices.length],cx=Math.max(bw/2+3,Math.min(width-bw/2-3,x+o[0])),cy=Math.max(bh/2+3,Math.min(height-bh/2-3,y+o[1]));best={id:id,x:x,y:y,cx:cx,cy:cy,bw:bw,bh:bh,rect:{x:cx-bw/2,y:cy-bh/2,w:bw,h:bh}};}placed.push(best.rect);return best;});
+}
+function renderMarkers(svgId,kind,width,height,items){
+const svg=document.getElementById(svgId),ns='http://www.w3.org/2000/svg';svg.setAttribute('viewBox','0 0 '+width+' '+height);svg.innerHTML='';
+const title=document.createElementNS(ns,'title');title.textContent='標示元件：'+items.join('、');svg.appendChild(title);
+for(const m of computeLabelPlaces(items,width,height,kind)){const g=document.createElementNS(ns,'g');g.setAttribute('aria-label',m.id);
+const colors=colorFor(m.id);const line=document.createElementNS(ns,'line');line.style.stroke=colors[1];line.setAttribute('x1',m.x);line.setAttribute('y1',m.y);line.setAttribute('x2',m.cx);line.setAttribute('y2',m.cy);line.setAttribute('class','marker-stem');g.appendChild(line);
+const pin=document.createElementNS(ns,'circle');pin.style.fill=colors[0];pin.setAttribute('cx',m.x);pin.setAttribute('cy',m.y);pin.setAttribute('r','8');pin.setAttribute('class','marker-pin');g.appendChild(pin);
+const rect=document.createElementNS(ns,'rect');rect.style.stroke=colors[0];rect.setAttribute('x',m.rect.x);rect.setAttribute('y',m.rect.y);rect.setAttribute('width',m.rect.w);rect.setAttribute('height',m.rect.h);rect.setAttribute('rx','8');rect.setAttribute('class','marker-tag');g.appendChild(rect);
+const text=document.createElementNS(ns,'text');text.style.fill=colors[1];text.setAttribute('x',m.cx);text.setAttribute('y',m.cy);text.setAttribute('class','marker-text');text.textContent=m.id;g.appendChild(text);svg.appendChild(g);}
+}
+function showResults(items){currentMatches=items;resultsHead.classList.remove('hidden');selectedParts.classList.remove('hidden');summary.textContent='找到 '+items.length+' 個元件；各類別以不同顏色同步標示在兩張圖上。';selectedParts.replaceChildren();for(const id of items){const chip=document.createElement('span'),colors=colorFor(id);chip.className='chip';chip.style.borderColor=colors[0];chip.style.color=colors[1];chip.textContent=id;selectedParts.appendChild(chip);}const visiblePhotoItems=items.filter(photoIsVisible);photoCoverageNote.textContent='依目前照片定位，畫面內可標示 '+visiblePhotoItems.length+' 個查詢元件。'+(items.length>visiblePhotoItems.length?'另有 '+(items.length-visiblePhotoItems.length)+' 個位於照片範圍外，仍會完整標示於右側佈置圖。':'');renderMarkers('photoMarkers','photo',photoImage.naturalWidth||PHOTO_WIDTH,photoImage.naturalHeight||PHOTO_HEIGHT,visiblePhotoItems);renderMarkers('layoutMarkers','layout',LAYOUT_WIDTH,LAYOUT_HEIGHT,items);downloadButtons.classList.toggle('hidden',!saveToggle.checked);}
+form.addEventListener('submit',function(event){event.preventDefault();const raw=input.value.replace(/\u3000/g,' ').trim();if(!raw){clearResultDisplay();setMessage('請輸入元件編號，例如 U1、R-all，或以空格分隔多筆編號。','error');input.focus();return;}const resolved=resolveIdentifiers(raw);if(resolved.error){clearResultDisplay();setMessage(resolved.error,'error');input.focus();return;}const items=resolved.items;showResults(items);setMessage('已找到 '+items.length+' 個元件：'+items.join('、')+(resolved.tokens.length>items.length?'（重複或群組內項目已合併）':''),'success');results.scrollIntoView({behavior:'smooth',block:'start'});});form.addEventListener('reset',function(){clearResultDisplay();saveToggle.checked=false;downloadButtons.classList.add('hidden');setMessage('');});
+saveToggle.addEventListener('change',function(){downloadButtons.classList.toggle('hidden',!saveToggle.checked||!currentMatches.length);});
+function roundedRect(ctx,x,y,w,h,r){const q=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+q,y);ctx.arcTo(x+w,y,x+w,y+h,q);ctx.arcTo(x+w,y+h,x,y+h,q);ctx.arcTo(x,y+h,x,y,q);ctx.arcTo(x,y,x+w,y,q);ctx.closePath();}
+async function downloadMarked(kind){const image=document.getElementById(kind==='photo'?'photoImage':'layoutImage');if(!image.complete||!image.naturalWidth){setMessage('圖片尚未載入完成，請稍候再下載。','error');return;}
+const canvas=document.createElement('canvas');canvas.width=image.naturalWidth;canvas.height=image.naturalHeight;const ctx=canvas.getContext('2d');ctx.drawImage(image,0,0);const w=kind==='photo'?image.naturalWidth:LAYOUT_WIDTH,h=kind==='photo'?image.naturalHeight:LAYOUT_HEIGHT;
+for(const m of computeLabelPlaces(kind==='photo'?currentMatches.filter(photoIsVisible):currentMatches,w,h,kind)){const dot=kind==='photo'?16:13;ctx.beginPath();ctx.arc(m.x,m.y,dot,0,Math.PI*2);const colors=colorFor(m.id);ctx.fillStyle=colors[0];ctx.fill();ctx.lineWidth=4;ctx.strokeStyle='#fff';ctx.stroke();ctx.beginPath();ctx.moveTo(m.x,m.y);ctx.lineTo(m.cx,m.cy);ctx.lineWidth=3;ctx.strokeStyle=colors[1];ctx.stroke();roundedRect(ctx,m.rect.x,m.rect.y,m.rect.w,m.rect.h,8);ctx.fillStyle='rgba(255,255,255,.97)';ctx.fill();ctx.lineWidth=2.5;ctx.strokeStyle=colors[0];ctx.stroke();ctx.font='700 '+(kind==='photo'?21:18)+'px Arial,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle=colors[1];ctx.fillText(m.id,m.cx,m.cy+1);}
+canvas.toBlob(function(blob){if(!blob){setMessage('圖片建立失敗，請重新勾選儲存並再試一次。','error');return;}const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download=kind==='photo'?'電路板元件標示.png':'元件佈置圖標示.png';document.body.appendChild(link);link.click();link.remove();setTimeout(function(){URL.revokeObjectURL(url);},1500);},'image/png');}
+photoFile.addEventListener('change',function(){const file=photoFile.files&&photoFile.files[0];if(!file)return;if(file.type&&!file.type.startsWith('image/')){setMessage('請選擇圖片檔案（例如 JPG、PNG 或 WebP）。','error');photoFile.value='';return;}const nextUrl=URL.createObjectURL(file),probe=new Image();probe.onload=function(){const previousUrl=selectedPhotoUrl;stopCalibration();photoCalibration=createDefaultPhotoCalibration();calibrationHelp.textContent="已選擇新照片；如取景與範例不同，請重新校正。";selectedPhotoUrl=nextUrl;photoImage.onload=function(){photoImage.onload=null;photoImage.alt='使用者選擇的實際電路板照片';if(currentMatches.length)showResults(currentMatches);setMessage('已選用圖片「'+file.name+'」。輸入元件編號後即可標示。照片取景不同時，標記位置可能偏移。','success');};photoImage.onerror=function(){photoImage.onerror=null;setMessage('圖片無法載入，請改選其他圖片。','error');};photoImage.src=nextUrl;if(previousUrl)URL.revokeObjectURL(previousUrl);};probe.onerror=function(){URL.revokeObjectURL(nextUrl);setMessage('無法讀取所選圖片，請確認檔案格式後再試。','error');photoFile.value='';};probe.src=nextUrl;});
+restorePhoto.addEventListener('click',function(){stopCalibration();photoCalibration=createDefaultPhotoCalibration();calibrationHelp.textContent='已回復範例照片的預設定位。';if(selectedPhotoUrl){URL.revokeObjectURL(selectedPhotoUrl);selectedPhotoUrl='';}photoFile.value='';photoImage.onload=function(){photoImage.onload=null;photoImage.alt='完整電路板照片';if(currentMatches.length)showResults(currentMatches);};photoImage.src=DEFAULT_PHOTO_SRC;setMessage('已還原範例照片。','success');});
+let calibrationStep=0,layoutAnchors=[];
+function stopCalibration(){calibrationStep=0;layoutAnchors=[];delete photoCalibration.photoAnchors;document.body.classList.remove('calibrating');}
+function imageCoordinate(event,image,width,height){const r=image.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)return null;return[(event.clientX-r.left)/r.width*width,(event.clientY-r.top)/r.height*height];}
+calibratePhoto.addEventListener('click',function(){if(!photoImage.complete||!photoImage.naturalWidth){setMessage('請先選擇或載入有效的電路板圖片，再開始校正。','error');return;}stopCalibration();calibrationStep=1;document.body.classList.add('calibrating');calibrationHelp.textContent='第 1/2 步：在右側佈置圖點選照片範圍的左上角，再點右下角。';setMessage('校正開始：請先在佈置圖點選照片範圍左上角。','success');});
+layoutImage.addEventListener('click',function(event){if(calibrationStep!==1)return;const p=imageCoordinate(event,layoutImage,LAYOUT_WIDTH,LAYOUT_HEIGHT);if(!p)return;layoutAnchors.push(p);if(layoutAnchors.length===1){calibrationHelp.textContent='第 1/2 步：已記錄左上角，請再點佈置圖中照片範圍的右下角。';setMessage('已記錄佈置圖左上角，請點右下角。','success');return;}if(layoutAnchors[1][0]<=layoutAnchors[0][0]||layoutAnchors[1][1]<=layoutAnchors[0][1]){layoutAnchors=[];setMessage('角點順序不正確，請重新依序點左上角、右下角。','error');return;}calibrationStep=2;calibrationHelp.textContent='第 2/2 步：在左側實際照片依序點選同一範圍的左上角、右下角。';setMessage('佈置圖範圍已記錄，請在實際照片點對應左上角。','success');});
+photoImage.addEventListener('click',function(event){if(calibrationStep!==2)return;const p=imageCoordinate(event,photoImage,photoImage.naturalWidth,photoImage.naturalHeight);if(!p)return;if(!photoCalibration.photoAnchors)photoCalibration.photoAnchors=[];photoCalibration.photoAnchors.push(p);if(photoCalibration.photoAnchors.length===1){calibrationHelp.textContent='第 2/2 步：已記錄照片左上角，請再點照片中對應的右下角。';setMessage('已記錄照片左上角，請點對應右下角。','success');return;}const a=photoCalibration.photoAnchors;delete photoCalibration.photoAnchors;if(a[1][0]<=a[0][0]||a[1][1]<=a[0][1]){setMessage('照片角點順序不正確，請重新開始校正。','error');stopCalibration();return;}photoCalibration={layout:{left:layoutAnchors[0][0],top:layoutAnchors[0][1],right:layoutAnchors[1][0],bottom:layoutAnchors[1][1]},photo:{left:a[0][0],top:a[0][1],right:a[1][0],bottom:a[1][1]},photoWidth:photoImage.naturalWidth,photoHeight:photoImage.naturalHeight};stopCalibration();calibrationHelp.textContent='照片定位已校正。若更換照片，請重新校正。';if(currentMatches.length)showResults(currentMatches);setMessage('照片定位校正完成，查詢標記與下載已更新。','success');});
+resetPhotoCalibration.addEventListener('click',function(){stopCalibration();photoCalibration=createDefaultPhotoCalibration();calibrationHelp.textContent='已回復範例照片的預設定位；若使用其他取景，請重新校正。';if(currentMatches.length)showResults(currentMatches);setMessage('已回復預設照片定位。','success');});document.getElementById('downloadPhoto').addEventListener('click',function(){downloadMarked('photo');});
+document.getElementById('downloadLayout').addEventListener('click',function(){downloadMarked('layout');});
+</script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
